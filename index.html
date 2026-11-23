@@ -323,6 +323,7 @@ async function load(fresh){
     }
     TASKS = r.tasks.filter(t => t.date >= from && t.date <= to).map(t => { const c = cls(t.status); return {...t, status: ({pend:'Pending', done:'Done', delay:'Done but Delay'})[c] || String(t.status).trim()}; });   // safety: keep only chosen range
     NOW = r.serverNow || Date.now();
+    if (S.role==='Admin' && !$('nameSel').value) syncNames(TASKS);
     render();
   }catch(err){
     if (my !== REQ) return;
@@ -330,6 +331,16 @@ async function load(fresh){
   }
 }
 
+// Admin: add any names found in the tasks to the Name dropdown (keeps current choice)
+function syncNames(tasks){
+  const sel = $('nameSel'), have = new Set([...sel.options].map(o => o.value));
+  const add = [...new Set(tasks.map(t => t.name))].filter(n => n && !have.has(n)).sort();
+  if (!add.length) return;
+  const cur = sel.value;
+  const all = [...[...sel.options].map(o => o.value).filter(Boolean), ...add].sort();
+  sel.innerHTML = ['', ...all].map(n => `<option value="${esc(n)}">${n ? esc(n) : 'All'}</option>`).join('');
+  sel.value = cur;
+}
 function render(){
   const q = $('search').value.trim().toLowerCase();
   const base = TASKS.filter(t => !q || String(t.task).toLowerCase().includes(q) || String(t.id).includes(q));
